@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  spotifyId    String   @unique
+  email        String?
+  displayName  String?
+  image        String?
+  refreshToken String?
+  accessToken  String?
+  tokenExpiry  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  listeningHistory ListeningHistory[]
+  analyticsCache   AnalyticsCache[]
+
+  @@map("users")
+}
+
+model Track {
+  id       String  @id @default(cuid())
+  spotifyId String @unique
+  name     String
+  album    String?
+  image    String?
+  artists  String[]
+  genres   String[]
+  popularity Int?
+  durationMs Int?
+
+  listeningHistory ListeningHistory[]
+
+  @@map("tracks")
+}
+
+model Artist {
+  id        String   @id @default(cuid())
+  spotifyId String   @unique
+  name      String
+  genres    String[]
+  image     String?
+  popularity Int?
+  followers  Int?
+
+  @@map("artists")
+}
+
+model ListeningHistory {
+  id       String   @id @default(cuid())
+  userId   String
+  trackId  String
+  playedAt DateTime
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track Track @relation(fields: [trackId], references: [id])
+
+  @@index([userId, playedAt])
+  @@map("listening_history")
+}
+
+model AnalyticsCache {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  timeRange String
+  data      Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, timeRange])
+  @@map("analytics_cache")
+}
